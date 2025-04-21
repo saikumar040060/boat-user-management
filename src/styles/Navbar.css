@@ -1,0 +1,44 @@
+.boAt-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #0f0f0f;
+  color: white;
+}
+
+.navbar-logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.navbar-logo .accent {
+  color: #ff3b3f;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.navbar-links a,
+.nav-btn-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.navbar-links a.active,
+.navbar-links a:hover,
+.nav-btn-link:hover {
+  color: #ff3b3f;
+}
+
+.navbar-icons {
+  display: flex;
+  gap: 1rem;
+}
