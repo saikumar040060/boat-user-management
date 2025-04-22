@@ -1,70 +1,69 @@
-import { useState } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Auth.css';
 
+const loginSchema = yup.object().shape({
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().required('Password is required'),
+});
+
+type LoginFormInputs = {
+  email: string;
+  password: string;
+};
+
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>({
+    resolver: yupResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginFormInputs) => {
     try {
-      setIsLoading(true);
       clearError();
-      await login(email, password);
+      await login(data.email, data.password);
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <h2>Login</h2>
-      {error && (
-        <div className="error-message">
-          <span>{error}</span>
-          <button onClick={clearError} className="close-btn">
-            ×
-          </button>
-        </div>
-      )}
-      <form onSubmit={handleSubmit}>
+      {error && <p className="error-message">{error}</p>}
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
-          />
+          <label>Email:</label>
+          <input {...register('email')} />
+          <p className="error">{errors.email?.message}</p>
         </div>
+
         <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-          />
+          <label>Password:</label>
+          <input type="password" {...register('password')} />
+          <p className="error">{errors.password?.message}</p>
         </div>
-        <button type="submit" disabled={isLoading} className="auth-button">
-          {isLoading ? 'Logging in...' : 'Login'}
-        </button>
+
+        <button type="submit" className="submit-btn">Login</button>
       </form>
-      <div className="auth-footer">
-        Don't have an account? <Link to="/register" className="auth-link">Register here</Link>
+
+      <div className="switch-auth">
+        <p>Don't have an account? <Link to="/register">Register here</Link></p>
       </div>
     </div>
   );
 };
 
 export default Login;
+

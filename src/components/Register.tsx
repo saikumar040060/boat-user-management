@@ -1,133 +1,80 @@
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/Auth.css';
 
-const registerSchema = yup.object({
-  name: yup.string().required('Name is required').min(2, 'Name must be at least 2 characters'),
-  email: yup.string().email('Invalid email format').required('Email is required'),
-  password: yup.string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[a-z]/, 'Must contain at least one lowercase letter')
-    .matches(/[A-Z]/, 'Must contain at least one uppercase letter')
-    .matches(/[0-9]/, 'Must contain at least one number'),
+const registerSchema = yup.object().shape({
+  name: yup.string().required('Name is required').min(2),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().min(6).required('Password is required'),
   confirmPassword: yup.string()
     .oneOf([yup.ref('password')], 'Passwords must match')
-    .required('Confirm Password is required')
+    .required('Please confirm your password'),
 });
 
+type RegisterFormInputs = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
+
 const Register = () => {
-  const { register, error: authError, clearError } = useAuth();
+  const { register: registerUser, error, clearError } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormInputs>({
+    resolver: yupResolver(registerSchema),
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-    
+  const onSubmit = async (data: RegisterFormInputs) => {
     try {
-      await registerSchema.validate(formData, { abortEarly: false });
-      setIsLoading(true);
-      await register(formData.name, formData.email, formData.password);
-      navigate('/dashboard');
-    } catch (err: any) {
-      if (err.name === 'ValidationError') {
-        const validationErrors: Record<string, string> = {};
-        err.inner.forEach((error: yup.ValidationError) => {
-          if (error.path) validationErrors[error.path] = error.message;
-        });
-        setErrors(validationErrors);
-      }
-    } finally {
-      setIsLoading(false);
+      clearError();
+      await registerUser(data.name, data.email, data.password);
+      navigate('/login');
+    } catch (err) {
+      console.error('Registration error:', err);
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   return (
     <div className="auth-container">
       <h2>Register</h2>
-      
-      {authError && (
-        <div className="error-message">
-          <span>{authError}</span>
-          <button onClick={clearError} className="close-btn">
-            ×
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
+      {error && <p className="error-message">{error}</p>}
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="form-group">
-          <label>Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className={errors.name ? 'input-error' : ''}
-          />
-          {errors.name && <span className="error-text">{errors.name}</span>}
+          <label>Name:</label>
+          <input {...register('name')} />
+          <p className="error">{errors.name?.message}</p>
         </div>
 
         <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={errors.email ? 'input-error' : ''}
-          />
-          {errors.email && <span className="error-text">{errors.email}</span>}
+          <label>Email:</label>
+          <input {...register('email')} />
+          <p className="error">{errors.email?.message}</p>
         </div>
 
         <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className={errors.password ? 'input-error' : ''}
-          />
-          {errors.password && <span className="error-text">{errors.password}</span>}
+          <label>Password:</label>
+          <input type="password" {...register('password')} />
+          <p className="error">{errors.password?.message}</p>
         </div>
 
         <div className="form-group">
-          <label>Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={errors.confirmPassword ? 'input-error' : ''}
-          />
-          {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+          <label>Confirm Password:</label>
+          <input type="password" {...register('confirmPassword')} />
+          <p className="error">{errors.confirmPassword?.message}</p>
         </div>
 
-        <button type="submit" disabled={isLoading} className="auth-button">
-          {isLoading ? 'Registering...' : 'Register'}
-        </button>
+        <button type="submit" className="submit-btn">Register</button>
       </form>
-
-      <div className="auth-footer">
-        Already have an account? <Link to="/login" className="auth-link">Login here</Link>
-      </div>
     </div>
   );
 };
